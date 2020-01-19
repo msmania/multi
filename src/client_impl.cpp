@@ -2,7 +2,8 @@
 #include "common.h"
 #include "sandbox.h"
 
-SandboxClient::SandboxClient(const std::wstring &endpointId) : binding_{} {
+SandboxClient::SandboxClient(const std::wstring &endpointId)
+  : binding_{}, serverPid_{} {
   wchar_t endpointBuffer[100];
   GenerateEndpointName(endpointBuffer, endpointId.c_str());
 
@@ -16,14 +17,21 @@ SandboxClient::SandboxClient(const std::wstring &endpointId) : binding_{} {
     /*StringBinding*/&bindStr);
   if (status) {
     Log(L"RpcStringBindingCompose failed - %08lx\n", status);
+    return;
   }
 
   status = RpcBindingFromStringBinding(bindStr, &binding_);
   if (status) {
     Log(L"RpcBindingFromStringBinding failed - %08lx\n", status);
+    RpcStringFree(&bindStr);
+    return;
   }
-
   RpcStringFree(&bindStr);
+
+  if (CallMethod(c_GetServerPid, &serverPid_)) {
+    RpcBindingFree(&binding_);
+    binding_ = nullptr;
+  }
 }
 
 SandboxClient::~SandboxClient() {
@@ -36,8 +44,15 @@ SandboxClient::operator bool() const {
   return !!binding_;
 }
 
-ULONG SandboxClient::NtCreateSection(long fileHandle, long* sectionHandle) {
-  return CallMethod(c_NtCreateSection, fileHandle, sectionHandle);
+DWORD SandboxClient::GetServerPid() const {
+  return serverPid_;
+}
+
+ULONG SandboxClient::NtCreateSection(unsigned long fileHandle,
+                                     unsigned long* sectionHandle,
+                                     unsigned long* status) {
+  return CallMethod(c_NtCreateSection,
+                    GetCurrentProcessId(), fileHandle, sectionHandle, status);
 }
 
 ULONG SandboxClient::Shutdown() {

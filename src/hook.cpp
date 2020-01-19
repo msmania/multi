@@ -86,6 +86,25 @@ NTSTATUS NtDll::NtCreateSection(PHANDLE SectionHandle,
       AllocationAttributes,
       FileHandle);
 
+  Process thisProcess;
+  Process rpcServer(client_->GetServerPid(), PROCESS_DUP_HANDLE);
+
+  if (!client_
+      || !rpcServer
+      || !(DesiredAccess & SECTION_MAP_EXECUTE)
+      || ObjectAttributes
+      || MaximumSize
+      || !(AllocationAttributes & SEC_IMAGE)
+      || !FileHandle) {
+    return NtCreateSection_(SectionHandle,
+                            DesiredAccess,
+                            ObjectAttributes,
+                            MaximumSize,
+                            SectionPageProtection,
+                            AllocationAttributes,
+                            FileHandle);
+  }
+
   return NtCreateSection_(SectionHandle,
                           DesiredAccess,
                           ObjectAttributes,
@@ -98,7 +117,8 @@ NTSTATUS NtDll::NtCreateSection(PHANDLE SectionHandle,
 NtDll::NtDll()
   : module_(LoadLibrary(L"ntdll.dll")),
     NtCreateSection_(reinterpret_cast<decltype(&detoured_NtCreateSection)>(
-      GetProcAddress(module_, "NtCreateSection")))
+      GetProcAddress(module_, "NtCreateSection"))),
+    client_{}
 {}
 
 NtDll::~NtDll() {
@@ -109,6 +129,10 @@ NtDll::~NtDll() {
 
 NtDll::operator bool() const {
   return !!module_ && !!NtCreateSection_;
+}
+
+void NtDll::SetRpcClientWeakRef(SandboxClient *client) {
+  client_ = client;
 }
 
 bool NtDll::Hook() {

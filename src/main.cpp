@@ -11,12 +11,17 @@ class MainWindow : public BaseWindow<MainWindow> {
       return false;
     }
 
-    return true;
-  }
+    auto ntdll = NtDll::GetInstance();
+    if (!ntdll) {
+      return false;
+    }
 
-  void OnLButtonDown() {
-    long a = 1, b = 0;
-    client_.NtCreateSection(a, &b);
+    ntdll->SetRpcClientWeakRef(&client_);
+    if (!ntdll->Hook()) {
+      return false;
+    }
+
+    return true;
   }
 
 public:
@@ -35,9 +40,6 @@ public:
         return -1;
       }
       break;
-    case WM_LBUTTONDOWN:
-      OnLButtonDown();
-      break;
     case WM_DESTROY:
       client_.Shutdown();
       PostQuitMessage(0);
@@ -51,10 +53,6 @@ public:
 };
 
 void ClientMain(const wchar_t *uuid) {
-  if (auto ntdll = NtDll::GetInstance()) {
-    ntdll->Hook();
-  }
-
   if (auto p = std::make_unique<MainWindow>(uuid)) {
     if (p->Create(L"MainWindow Title",
                   WS_OVERLAPPEDWINDOW,

@@ -4,10 +4,20 @@
 
 RPC_WSTR RPC_Protocol = L"ncacn_np";
 
+void s_GetServerPid(
+    /* [in] */ handle_t IDL_handle,
+    /* [out] */ unsigned long *serverPid) {
+  if (serverPid) {
+    *serverPid = GetCurrentProcessId();
+  }
+}
+
 void s_NtCreateSection( 
     /* [in] */ handle_t IDL_handle,
-    /* [in] */ long fileHandle,
-    /* [out] */ long *sectionHandle) {
+    /* [in] */ unsigned long clientPid,
+    /* [in] */ unsigned long fileHandle,
+    /* [out] */ unsigned long *sectionHandle,
+    /* [out] */ unsigned long *status) {
   *sectionHandle = fileHandle + 0x42;
 }
 

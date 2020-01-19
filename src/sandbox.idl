@@ -5,6 +5,10 @@ version(1.0)
 ]
 interface sandbox
 {
-  void NtCreateSection([in] long fileHandle, [out] long * sectionHandle);
+  void GetServerPid([out] unsigned long * serverPid);
+  void NtCreateSection([in] unsigned long clientPid,
+                       [in] unsigned long fileHandle,
+                       [out] unsigned long * sectionHandle,
+                       [out] unsigned long * status);
   void Shutdown(void);
 }

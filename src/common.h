@@ -50,6 +50,7 @@ bool GenerateEndpointName(wchar_t (&endpoint)[N], const wchar_t *endpointId) {
 
 class SandboxClient final {
   RPC_BINDING_HANDLE binding_;
+  DWORD serverPid_;
 
   template<typename... Args>
   ULONG CallMethod(void (*callback)(RPC_BINDING_HANDLE binding, Args...),
@@ -72,7 +73,10 @@ public:
 
   operator bool() const;
 
-  ULONG NtCreateSection(long fileHandle, long* sectionHandle);
+  DWORD GetServerPid() const;
+  ULONG NtCreateSection(unsigned long fileHandle,
+                        unsigned long* sectionHandle,
+                        unsigned long* status);
   ULONG Shutdown();
 };
 
@@ -111,6 +115,7 @@ class NtDll final {
 
   HMODULE module_;
   decltype(&detoured_NtCreateSection) NtCreateSection_;
+  SandboxClient *client_;
 
   NtDll();
 
@@ -121,6 +126,7 @@ public:
 
   operator bool() const;
 
+  void SetRpcClientWeakRef(SandboxClient *client);
   bool Hook();
   NTSTATUS NtCreateSection(PHANDLE SectionHandle,
                            ACCESS_MASK DesiredAccess,
@@ -129,4 +135,21 @@ public:
                            ULONG SectionPageProtection,
                            ULONG AllocationAttributes,
                            HANDLE FileHandle);
+};
+
+class Process final {
+  HANDLE handle_;
+
+public:
+  Process();
+  Process(DWORD pid, DWORD desiredAccess);
+  ~Process();
+
+  operator bool() const;
+  operator HANDLE() const;
+
+  HANDLE MoveHandleFrom(const Process &sourceProcess,
+                        HANDLE handleToMove) const;
+  HANDLE MoveHandleTo(HANDLE handleToMove,
+                      const Process &targetProcess) const;
 };

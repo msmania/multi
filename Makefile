@@ -31,6 +31,7 @@ OBJS=\
 	$(OBJDIR)\main.obj\
 	$(OBJDIR)\policy.obj\
 	$(OBJDIR)\rpcutils.obj\
+	$(OBJDIR)\synch.obj\
 	$(OBJDIR)\utils.obj\
 
 LIBS=\
