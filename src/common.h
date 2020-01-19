@@ -98,3 +98,35 @@ public:
 
   operator LPPROC_THREAD_ATTRIBUTE_LIST();
 };
+
+class NtDll final {
+  static
+  NTSTATUS NTAPI detoured_NtCreateSection(PHANDLE SectionHandle,
+                                          ACCESS_MASK DesiredAccess,
+                                          PVOID ObjectAttributes,
+                                          PLARGE_INTEGER MaximumSize,
+                                          ULONG SectionPageProtection,
+                                          ULONG AllocationAttributes,
+                                          HANDLE FileHandle);
+
+  HMODULE module_;
+  decltype(&detoured_NtCreateSection) NtCreateSection_;
+
+  NtDll();
+
+public:
+  static NtDll *GetInstance();
+
+  ~NtDll();
+
+  operator bool() const;
+
+  bool Hook();
+  NTSTATUS NtCreateSection(PHANDLE SectionHandle,
+                           ACCESS_MASK DesiredAccess,
+                           PVOID ObjectAttributes,
+                           PLARGE_INTEGER MaximumSize,
+                           ULONG SectionPageProtection,
+                           ULONG AllocationAttributes,
+                           HANDLE FileHandle);
+};

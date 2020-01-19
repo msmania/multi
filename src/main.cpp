@@ -51,6 +51,10 @@ public:
 };
 
 void ClientMain(const wchar_t *uuid) {
+  if (auto ntdll = NtDll::GetInstance()) {
+    ntdll->Hook();
+  }
+
   if (auto p = std::make_unique<MainWindow>(uuid)) {
     if (p->Create(L"MainWindow Title",
                   WS_OVERLAPPEDWINDOW,

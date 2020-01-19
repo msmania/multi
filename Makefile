@@ -26,6 +26,7 @@ OBJS=\
 	$(OBJDIR)\$(SSTUB).obj\
 	$(OBJDIR)\blob.obj\
 	$(OBJDIR)\client_impl.obj\
+	$(OBJDIR)\hook.obj\
 	$(OBJDIR)\server_impl.obj\
 	$(OBJDIR)\main.obj\
 	$(OBJDIR)\policy.obj\
