@@ -75,6 +75,9 @@ public:
 
   DWORD GetServerPid() const;
   ULONG NtCreateSection(unsigned long fileHandle,
+                        unsigned long desiredAccess,
+                        unsigned long sectionPageProtection,
+                        unsigned long allocationAttributes,
                         unsigned long* sectionHandle,
                         unsigned long* status);
   ULONG Shutdown();

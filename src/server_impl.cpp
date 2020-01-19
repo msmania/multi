@@ -16,6 +16,9 @@ void s_NtCreateSection(
     /* [in] */ handle_t IDL_handle,
     /* [in] */ unsigned long clientPid,
     /* [in] */ unsigned long fileHandle,
+    /* [in] */ unsigned long desiredAccess,
+    /* [in] */ unsigned long sectionPageProtection,
+    /* [in] */ unsigned long allocationAttributes,
     /* [out] */ unsigned long *sectionHandle,
     /* [out] */ unsigned long *status) {
   *sectionHandle = fileHandle + 0x42;

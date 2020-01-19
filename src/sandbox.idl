@@ -8,6 +8,9 @@ interface sandbox
   void GetServerPid([out] unsigned long * serverPid);
   void NtCreateSection([in] unsigned long clientPid,
                        [in] unsigned long fileHandle,
+                       [in] unsigned long desiredAccess,
+                       [in] unsigned long sectionPageProtection,
+                       [in] unsigned long allocationAttributes,
                        [out] unsigned long * sectionHandle,
                        [out] unsigned long * status);
   void Shutdown(void);

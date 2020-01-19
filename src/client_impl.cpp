@@ -49,10 +49,19 @@ DWORD SandboxClient::GetServerPid() const {
 }
 
 ULONG SandboxClient::NtCreateSection(unsigned long fileHandle,
+                                     unsigned long desiredAccess,
+                                     unsigned long sectionPageProtection,
+                                     unsigned long allocationAttributes,
                                      unsigned long* sectionHandle,
                                      unsigned long* status) {
   return CallMethod(c_NtCreateSection,
-                    GetCurrentProcessId(), fileHandle, sectionHandle, status);
+                    GetCurrentProcessId(),
+                    fileHandle,
+                    desiredAccess,
+                    sectionPageProtection,
+                    allocationAttributes,
+                    sectionHandle,
+                    status);
 }
 
 ULONG SandboxClient::Shutdown() {
