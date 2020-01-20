@@ -103,15 +103,16 @@ HANDLE DoCreateProcess(const wchar_t *executable,
 
 const wchar_t Option_Child[] = L"--child=";
 
+DWORD WINAPI RpcServerThread(LPVOID param) {
+  if (auto server = reinterpret_cast<SandboxServer*>(param)) {
+    server->StartAndWait();
+  }
+  return 0;
+}
+
 void ServerMain() {
   CodeIntegrityGuard cig;
   if (!cig) {
-    return;
-  }
-
-  wchar_t exe_name[MAX_PATH];
-  if (!GetModuleFileName(nullptr, exe_name, MAX_PATH)) {
-    Log(L"GetModuleFileName failed - %08lx\n", GetLastError());
     return;
   }
 
@@ -119,6 +120,18 @@ void ServerMain() {
 
   SandboxServer server(uuidStr);
   if (!server) {
+    return;
+  }
+
+  Thread rpcThread(RpcServerThread, &server, /*creationFlags*/0);
+  if (!rpcThread) {
+    return;
+  }
+
+  wchar_t exe_name[MAX_PATH];
+  if (!GetModuleFileName(nullptr, exe_name, MAX_PATH)) {
+    Log(L"GetModuleFileName failed - %08lx\n", GetLastError());
+    TerminateThread(rpcThread, 0);
     return;
   }
 
@@ -135,13 +148,16 @@ void ServerMain() {
                                  EXTENDED_STARTUPINFO_PRESENT,
                                  &si.StartupInfo);
   if (!process) {
+    TerminateThread(rpcThread, 0);
     return;
   }
 
-  server.StartAndWait();
-
   WaitForSingleObject(process, INFINITE);
   CloseHandle(process);
+
+  if (WaitForSingleObject(rpcThread, 100) == WAIT_TIMEOUT) {
+    TerminateThread(rpcThread, 0);
+  }
 }
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR cmdline, int) {

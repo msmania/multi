@@ -59,3 +59,32 @@ HANDLE Process::DuplicateHandleTo(HANDLE handleToDuplicate,
   }
   return newHandle;
 }
+
+Thread::Thread(LPTHREAD_START_ROUTINE threadStart,
+               PVOID param,
+               DWORD creationFlags)
+    : handle_(CreateThread(/*lpThreadAttributes*/nullptr,
+                           /*dwStackSize*/0,
+                           threadStart,
+                           param,
+                           creationFlags,
+                           /*lpThreadId*/nullptr)) {
+  if (!handle_) {
+    Log(L"CreateThread failed - %08lx\n", GetLastError());
+  }
+}
+
+Thread::~Thread() {
+  if (handle_) {
+    WaitForSingleObject(handle_, INFINITE);
+    CloseHandle(handle_);
+  }
+}
+
+Thread::operator bool() const {
+  return !!handle_;
+}
+
+Thread::operator HANDLE() const {
+  return handle_;
+}

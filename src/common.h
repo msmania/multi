@@ -137,3 +137,18 @@ public:
                            const Process &targetProcess,
                            bool closeSourceHandle) const;
 };
+
+class Thread final {
+  HANDLE handle_;
+
+public:
+  Thread(LPTHREAD_START_ROUTINE threadStart,
+         PVOID param,
+         DWORD creationFlags);
+  ~Thread();
+
+  operator bool() const;
+  operator HANDLE() const;
+
+  bool Wait(DWORD timeout) const;
+};
