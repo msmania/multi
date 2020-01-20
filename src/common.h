@@ -151,8 +151,10 @@ public:
   operator bool() const;
   operator HANDLE() const;
 
-  HANDLE MoveHandleFrom(const Process &sourceProcess,
-                        HANDLE handleToMove) const;
-  HANDLE MoveHandleTo(HANDLE handleToMove,
-                      const Process &targetProcess) const;
+  HANDLE DuplicateHandleFrom(const Process &sourceProcess,
+                             HANDLE handleToDuplicate,
+                             bool closeSourceHandle) const;
+  HANDLE DuplicateHandleTo(HANDLE handleToDuplicate,
+                           const Process &targetProcess,
+                           bool closeSourceHandle) const;
 };

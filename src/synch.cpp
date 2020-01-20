@@ -22,34 +22,38 @@ Process::operator bool() const {
 
 Process::operator HANDLE() const {return handle_; }
 
-HANDLE Process::MoveHandleFrom(const Process &sourceProcess,
-                               HANDLE handleToMove) const {
+HANDLE Process::DuplicateHandleFrom(const Process &sourceProcess,
+                                    HANDLE handleToDuplicate,
+                                    bool closeSourceHandle) const {
   HANDLE newHandle = nullptr;
-  BOOL ok = DuplicateHandle(
-    sourceProcess,
-    handleToMove,
-    *this,
-    &newHandle,
-    /*dwDesiredAccess*/0,
-    /*bInheritHandle*/FALSE,
-    DUPLICATE_CLOSE_SOURCE | DUPLICATE_SAME_ACCESS);
+  DWORD flags = DUPLICATE_SAME_ACCESS;
+  if (closeSourceHandle) flags |= DUPLICATE_CLOSE_SOURCE;
+  BOOL ok = DuplicateHandle(sourceProcess,
+                            handleToDuplicate,
+                            *this,
+                            &newHandle,
+                            /*dwDesiredAccess*/0,
+                            /*bInheritHandle*/FALSE,
+                            flags);
   if (!ok) {
     Log(L"DuplicateHandle failed - %08lx\n", GetLastError());
   }
   return newHandle;
 }
 
-HANDLE Process::MoveHandleTo(HANDLE handleToMove,
-                             const Process &targetProcess) const {
+HANDLE Process::DuplicateHandleTo(HANDLE handleToDuplicate,
+                                  const Process &targetProcess,
+                                  bool closeSourceHandle) const {
   HANDLE newHandle = nullptr;
-  BOOL ok = DuplicateHandle(
-    *this,
-    handleToMove,
-    targetProcess,
-    &newHandle,
-    /*dwDesiredAccess*/0,
-    /*bInheritHandle*/FALSE,
-    DUPLICATE_CLOSE_SOURCE | DUPLICATE_SAME_ACCESS);
+  DWORD flags = DUPLICATE_SAME_ACCESS;
+  if (closeSourceHandle) flags |= DUPLICATE_CLOSE_SOURCE;
+  BOOL ok = DuplicateHandle(*this,
+                            handleToDuplicate,
+                            targetProcess,
+                            &newHandle,
+                            /*dwDesiredAccess*/0,
+                            /*bInheritHandle*/FALSE,
+                            flags);
   if (!ok) {
     Log(L"DuplicateHandle failed - %08lx\n", GetLastError());
   }

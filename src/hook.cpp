@@ -77,20 +77,20 @@ NTSTATUS NtDll::NtCreateSection(PHANDLE SectionHandle,
                                 ULONG SectionPageProtection,
                                 ULONG AllocationAttributes,
                                 HANDLE FileHandle) {
-  Log(L"SH=%p DH=%08lx OA=%p MS=%p SPP=%08lx AA=%08lx FH=%08lx\n",
-      SectionHandle,
-      DesiredAccess,
-      ObjectAttributes,
-      MaximumSize,
-      SectionPageProtection,
-      AllocationAttributes,
-      FileHandle);
+  if (!client_) {
+    return NtCreateSection_(SectionHandle,
+                            DesiredAccess,
+                            ObjectAttributes,
+                            MaximumSize,
+                            SectionPageProtection,
+                            AllocationAttributes,
+                            FileHandle);
+  }
 
   Process thisProcess;
   Process rpcServer(client_->GetServerPid(), PROCESS_DUP_HANDLE);
 
-  if (!client_
-      || !rpcServer
+  if (!rpcServer
       || !(DesiredAccess & SECTION_MAP_EXECUTE)
       || ObjectAttributes
       || MaximumSize
@@ -105,13 +105,42 @@ NTSTATUS NtDll::NtCreateSection(PHANDLE SectionHandle,
                             FileHandle);
   }
 
-  return NtCreateSection_(SectionHandle,
-                          DesiredAccess,
-                          ObjectAttributes,
-                          MaximumSize,
-                          SectionPageProtection,
-                          AllocationAttributes,
-                          FileHandle);
+  Log(L"DH=%08lx OA=%p MS=%p SPP=%08lx AA=%08lx FH=%08lx\n",
+      DesiredAccess,
+      ObjectAttributes,
+      MaximumSize,
+      SectionPageProtection,
+      AllocationAttributes,
+      FileHandle);
+
+  // The caller is responsible to close FileHandle.  Don't close the source
+  // handle to keep FileHandle alive.  A duplicated handle is closed in the
+  // server process.
+  HANDLE remoteFileHandle = thisProcess.DuplicateHandleTo(
+      FileHandle,
+      rpcServer,
+      /*closeSourceHandle*/false);
+  if (!remoteFileHandle) {
+    return STATUS_INVALID_HANDLE;
+  }
+
+  ULONG remoteSectionHandle, rpc_status, status;
+  rpc_status = client_->NtCreateSection(HandleToUlong(remoteFileHandle),
+                                        DesiredAccess,
+                                        SectionPageProtection,
+                                        AllocationAttributes,
+                                        &remoteSectionHandle,
+                                        &status);
+  if (rpc_status) {
+    *SectionHandle = nullptr;
+    return rpc_status;
+  }
+
+  *SectionHandle = thisProcess.DuplicateHandleFrom(
+      rpcServer,
+      UlongToHandle(remoteSectionHandle),
+      /*closeSourceHandle*/true);
+  return *SectionHandle ? status : STATUS_INVALID_HANDLE;
 }
 
 NtDll::NtDll()

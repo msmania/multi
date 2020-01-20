@@ -21,7 +21,22 @@ void s_NtCreateSection(
     /* [in] */ unsigned long allocationAttributes,
     /* [out] */ unsigned long *sectionHandle,
     /* [out] */ unsigned long *status) {
-  *sectionHandle = fileHandle + 0x42;
+  auto ntdll = NtDll::GetInstance();
+  if (!ntdll) {
+    *status = STATUS_DLL_NOT_FOUND;
+    *sectionHandle = 0;
+  }
+
+  HANDLE section = nullptr;
+  *status = ntdll->NtCreateSection(&section,
+                                   desiredAccess,
+                                   /*ObjectAttributes*/nullptr,
+                                   /*MaximumSize*/nullptr,
+                                   sectionPageProtection,
+                                   allocationAttributes,
+                                   UlongToHandle(fileHandle));
+  *sectionHandle = HandleToUlong(section);
+  CloseHandle(UlongToHandle(fileHandle));
 }
 
 void s_Shutdown( 
