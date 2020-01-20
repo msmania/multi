@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <strsafe.h>
 #include "common.h"
 
 void Log(LPCTSTR format, ...) {

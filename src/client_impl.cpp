@@ -4,21 +4,27 @@
 
 SandboxClient::SandboxClient(const std::wstring &endpointId)
   : binding_{}, serverPid_{} {
-  wchar_t endpointBuffer[100];
-  GenerateEndpointName(endpointBuffer, endpointId.c_str());
+  RPC_STATUS status = -1;
+  RPC_WSTR bindStr = nullptr;
+  if (auto endpointBuffer = new wchar_t[endpointId.size() + 1]) {
+    endpointId.copy(endpointBuffer, endpointId.size());
+    endpointBuffer[endpointId.size()] = 0;
 
-  RPC_WSTR bindStr;
-  RPC_STATUS status = RpcStringBindingCompose(
-    /*ObjUuid*/nullptr,
-    /*ProtSeq*/RPC_Protocol,
-    /*NetworkAddr*/nullptr,
-    /*Endpoint*/endpointBuffer,
-    /*Options*/nullptr,
-    /*StringBinding*/&bindStr);
-  if (status) {
-    Log(L"RpcStringBindingCompose failed - %08lx\n", status);
-    return;
+    status = RpcStringBindingCompose(
+      /*ObjUuid*/nullptr,
+      /*ProtSeq*/RPC_Protocol,
+      /*NetworkAddr*/nullptr,
+      /*Endpoint*/endpointBuffer,
+      /*Options*/nullptr,
+      /*StringBinding*/&bindStr);
+    if (status) {
+      Log(L"RpcStringBindingCompose failed - %08lx\n", status);
+    }
+
+    delete [] endpointBuffer;
   }
+
+  if (status) return;
 
   status = RpcBindingFromStringBinding(bindStr, &binding_);
   if (status) {

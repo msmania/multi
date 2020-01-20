@@ -2,7 +2,7 @@
 #include "common.h"
 #include "sandbox.h"
 
-RPC_WSTR RPC_Protocol = L"ncacn_np";
+RPC_WSTR RPC_Protocol = L"ncalrpc";
 
 void s_GetServerPid(
     /* [in] */ handle_t IDL_handle,
@@ -57,18 +57,24 @@ void s_Shutdown(
 
 SandboxServer::SandboxServer(const std::wstring &endpointId)
     : initialized_(false) {
+  RPC_STATUS status = -1;
+  if (auto endpointBuffer = new wchar_t[endpointId.size() + 1]) {
+    endpointId.copy(endpointBuffer, endpointId.size());
+    endpointBuffer[endpointId.size()] = 0;
 
-  wchar_t endpointBuffer[100];
-  GenerateEndpointName(endpointBuffer, endpointId.c_str());
+    status = RpcServerUseProtseqEp(
+        /*Protseq*/RPC_Protocol,
+        /*MaxCalls*/RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
+        /*Endpoint*/endpointBuffer,
+        /*SecurityDescriptor*/nullptr);
+    if (status) {
+      Log(L"RpcServerUseProtseqEp failed - %08lx\n", status);
+    }
 
-  RPC_STATUS status = RpcServerUseProtseqEp(
-    /*Protseq*/RPC_Protocol,
-    /*MaxCalls*/RPC_C_PROTSEQ_MAX_REQS_DEFAULT,
-    /*Endpoint*/endpointBuffer,
-    /*SecurityDescriptor*/nullptr);
-  if (status) {
-    Log(L"RpcServerUseProtseqEp failed - %08lx\n", status);
+    delete [] endpointBuffer;
   }
+
+  if (status) return;
 
   status = RpcServerRegisterIf(
     s_sandbox_v1_0_s_ifspec,
