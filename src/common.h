@@ -53,6 +53,7 @@ public:
   operator bool() const;
 
   DWORD GetServerPid() const;
+  HANDLE GetSharedSection();
   ULONG NtCreateSection(unsigned long fileHandle,
                         unsigned long desiredAccess,
                         unsigned long sectionPageProtection,
@@ -151,4 +152,43 @@ public:
   operator HANDLE() const;
 
   bool Wait(DWORD timeout) const;
+};
+
+class SharedMemory final {
+  HANDLE handle_;
+
+public:
+  class MappedView final {
+    LPVOID base_;
+
+  public:
+    MappedView(const SharedMemory &section,
+               DWORD desiredAccess,
+               DWORD offset,
+               DWORD size);
+    MappedView(MappedView &&other);
+    MappedView &operator=(MappedView &&other);
+    ~MappedView();
+
+    MappedView(const MappedView &) = delete;
+    MappedView &operator=(const MappedView&) = delete;
+
+    operator bool();
+
+    template<typename T>
+    T *At(uint32_t offset) {
+      return reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(base_) + offset);
+    }
+  };
+
+  SharedMemory(DWORD size, LPCWSTR name);
+  SharedMemory(HANDLE section);
+  ~SharedMemory();
+
+  operator bool() const;
+  operator HANDLE() const;
+
+  MappedView Map(DWORD desiredAccess,
+                 DWORD offset,
+                 DWORD size);
 };

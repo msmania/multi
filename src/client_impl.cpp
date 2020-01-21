@@ -54,6 +54,23 @@ DWORD SandboxClient::GetServerPid() const {
   return serverPid_;
 }
 
+HANDLE SandboxClient::GetSharedSection() {
+  unsigned long serverHandle = 0;
+  ULONG status = CallMethod(c_GetSharedSection, &serverHandle);
+  if (status) {
+    return nullptr;
+  }
+
+  Process thisProcess;
+  Process rpcServer(serverPid_, PROCESS_DUP_HANDLE);
+  if (!rpcServer) {
+    return nullptr;
+  }
+
+  return thisProcess.DuplicateHandleFrom(
+    rpcServer, UlongToHandle(serverHandle), /*closeSourceHandle*/false);
+}
+
 ULONG SandboxClient::NtCreateSection(unsigned long fileHandle,
                                      unsigned long desiredAccess,
                                      unsigned long sectionPageProtection,

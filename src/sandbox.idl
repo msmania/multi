@@ -6,6 +6,7 @@ version(1.0)
 interface sandbox
 {
   void GetServerPid([out] unsigned long * serverPid);
+  void GetSharedSection([out] unsigned long * sectionHandle);
   void NtCreateSection([in] unsigned long clientPid,
                        [in] unsigned long fileHandle,
                        [in] unsigned long desiredAccess,

@@ -12,6 +12,15 @@ void s_GetServerPid(
   }
 }
 
+void s_GetSharedSection(
+    /* [in] */ handle_t IDL_handle,
+    /* [out] */ unsigned long *sectionHandle) {
+  if (sectionHandle) {
+    static SharedMemory shared(4 << 16, nullptr);
+    *sectionHandle = HandleToUlong(shared);
+  }
+}
+
 void s_NtCreateSection( 
     /* [in] */ handle_t IDL_handle,
     /* [in] */ unsigned long clientPid,
