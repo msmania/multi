@@ -160,7 +160,96 @@ void ServerMain() {
   }
 }
 
+class FileMapper final {
+  HANDLE mSecionHandle;
+  LPVOID mMappedView;
+
+ public:
+  FileMapper(LPCWSTR path) noexcept : mSecionHandle{}, mMappedView{} {
+    HANDLE file = CreateFile(
+        path,
+        GENERIC_READ | GENERIC_EXECUTE,
+        FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_ARCHIVE,
+        nullptr);
+    if (file == INVALID_HANDLE_VALUE) {
+      Log(L"CreateFile failed - %08x\n", GetLastError());
+      return;
+    }
+
+    mSecionHandle = CreateFileMapping(
+        file,
+        nullptr,
+        PAGE_EXECUTE_READ,
+        0, 0,
+        nullptr);
+    if (!mSecionHandle) {
+      Log(L"CreateFileMapping failed - %08x\n", GetLastError());
+      CloseHandle(file);
+      return;
+    }
+
+    CloseHandle(file);
+
+    mMappedView = MapViewOfFileEx(
+        mSecionHandle,
+        FILE_MAP_EXECUTE,
+        0, 0, 0,
+        reinterpret_cast<uint8_t*>(::GetModuleHandle(nullptr)) + 0xB0000);
+    if (!mMappedView) {
+      Log(L"MapViewOfFile failed - %08x\n", GetLastError());
+      return;
+    }
+
+    Log(L"Mapped onto %p\n", mMappedView);
+  }
+
+  FileMapper(FileMapper&& aOther)
+      : mSecionHandle(aOther.mSecionHandle),
+        mMappedView(aOther.mMappedView) {
+    aOther.mSecionHandle = nullptr;
+    aOther.mMappedView = nullptr;
+  }
+
+  FileMapper& operator=(FileMapper&& aOther) {
+    if (this != &aOther) {
+      mSecionHandle = aOther.mSecionHandle;
+      aOther.mSecionHandle = nullptr;
+      mMappedView = aOther.mMappedView;
+      aOther.mMappedView = nullptr;
+    }
+    return *this;
+  }
+
+  FileMapper(const FileMapper&) = delete;
+  FileMapper& operator=(const FileMapper&) = delete;
+
+  ~FileMapper() {
+    if (mMappedView) {
+      if (!UnmapViewOfFile(mMappedView)) {
+        Log(L"UnmapViewOfFile failed - %08x\n", GetLastError());
+      }
+    }
+
+    if (mSecionHandle) {
+      if (!CloseHandle(mSecionHandle)) {
+        Log(L"CloseHandle(section) failed - %08x\n", GetLastError());
+      }
+    }
+  }
+};
+
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR cmdline, int) {
+  wchar_t thisExe[MAX_PATH + 1] = {};
+  if (GetModuleFileName(nullptr, thisExe, MAX_PATH)) {
+    std::vector<FileMapper> v;
+    for (int i = 0; i < 10; ++i) {
+      v.emplace_back(thisExe);
+    }
+  }
+
   const auto args = get_args(cmdline);
   if (args.size() == 0) {
     ServerMain();

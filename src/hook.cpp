@@ -77,7 +77,7 @@ NTSTATUS NtDll::NtCreateSection(PHANDLE SectionHandle,
                                 ULONG SectionPageProtection,
                                 ULONG AllocationAttributes,
                                 HANDLE FileHandle) {
-  if (!client_) {
+  if (true) {
     return NtCreateSection_(SectionHandle,
                             DesiredAccess,
                             ObjectAttributes,
